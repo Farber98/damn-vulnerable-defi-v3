@@ -112,7 +112,7 @@ describe('[Challenge] Climber', function () {
         );
 
         // execute the 4 calls
-        await AttackTimelockContract.execute(
+        await timelock.execute(
             toAddresses, // addresses to target
             Array(datas.length).fill(0), // value sent
             datas, // datas to be executed in target
